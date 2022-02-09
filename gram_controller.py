@@ -104,7 +104,7 @@ class GraphicRam:
       self.mem[addr] = pixel 
 
   def reshapeMem(self, channel=4):
-    self.fmem = self.mem.reshape(int(MAX_VRES/(channel/2)), int(MAX_HRES/(channel/2)), 3*channel)
+    self.fmem = self.mem.reshape(int(MAX_VRES/(channel**(1/2))), int(MAX_HRES/(channel**(1/2))), 3*channel)
 
   # def writeMem(self, pixeldata):
   #   for idx, pixel in enumerate(pixeldata):
@@ -131,6 +131,6 @@ gram.setPageAddress(100, 224)
 gram.setColumnAddress(100, 224)
 gram.writePartialMem(i_partImage1.pixelData)
 
-gram.reshapeMem()
+gram.reshapeMem(1)
 
 o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.mem)
