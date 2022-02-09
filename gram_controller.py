@@ -79,6 +79,10 @@ class GraphicRam:
     self.EP   = self.hres
     self.SC   = 0
     self.EC   = self.vres
+    self.PSC  = 0
+    self.PEC  = self.hres
+    self.SR   = 0
+    self.ER   = self.vres
     self.mem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
     # self.mem = np.empty(shape=(MAX_VRES*MAX_HRES), dtype='U36')
 
@@ -90,12 +94,12 @@ class GraphicRam:
   def setPageAddress(self, SP, EP):
     self.SP = SP
     self.EP = EP
-    print("Set Start Page Address : {0} End Page Address : {1}".format(self.SP, self.EP))
+    print("Set Start Page Write Address : {0} End Page Write Address : {1}".format(self.SP, self.EP))
 
   def setColumnAddress(self, SC, EC):
     self.SC = SC
     self.EC = EC
-    print("Set Start Column Address : {0} End Column Address : {1}".format(self.SC, self.EC))
+    print("Set Start Column Write Address : {0} End Column Write Address : {1}".format(self.SC, self.EC))
   
   def writePartialMem(self, pixelData):
     for idx, pixel in enumerate(pixelData):
@@ -106,6 +110,16 @@ class GraphicRam:
   def reshapeMem(self, channel=4):
     self.fmem = self.mem.reshape(int(MAX_VRES/(channel**(1/2))), int(MAX_HRES/(channel**(1/2))), 3*channel)
 
+  def setPartialRows(self, SR, ER):
+    self.SR = SR
+    self.ER = ER
+    print("Set Start Row Read Address: {0} End Row Read Address: {1}".format(self.SP, self.EP))
+
+  def setPartialColumns(self, PSC, PEC):
+    self.PSC = PSC
+    self.PEC = PEC
+    print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.SC, self.EC))
+    
   # def writeMem(self, pixeldata):
   #   for idx, pixel in enumerate(pixeldata):
   #     R = dec2hex(pixel[0], 3)
@@ -132,5 +146,8 @@ gram.setColumnAddress(100, 224)
 gram.writePartialMem(i_partImage1.pixelData)
 
 gram.reshapeMem(1)
+
+gram.setPartialRows(100, 224)
+gram.setPartialColumns(100,224)
 
 o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.mem)
