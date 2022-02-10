@@ -118,7 +118,7 @@ class GraphicRam:
   def setPartialColumns(self, PSC, PEC):
     self.PSC = PSC
     self.PEC = PEC
-    print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.SC, self.EC))
+    print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.PSC, self.PEC))
     
   # def writeMem(self, pixeldata):
   #   for idx, pixel in enumerate(pixeldata):
