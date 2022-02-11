@@ -113,12 +113,12 @@ class GraphicRam:
   def setPartialRows(self, SR, ER):
     self.SR = SR
     self.ER = ER
-    print("Set Start Row Read Address: {0} End Row Read Address: {1}".format(self.SP, self.EP))
+    print("Set Start Row Read Address: {0} End Row Read Address: {1}".format(self.SR, self.ER))
 
   def setPartialColumns(self, PSC, PEC):
     self.PSC = PSC
     self.PEC = PEC
-    print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.SC, self.EC))
+    print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.PSC, self.PEC))
     
   # def writeMem(self, pixeldata):
   #   for idx, pixel in enumerate(pixeldata):
