@@ -108,18 +108,29 @@ class GraphicRam:
       self.mem[addr] = pixel 
 
   def reshapeMem(self, channel=4):
-    self.fmem = self.mem.reshape(int(MAX_VRES/(channel**(1/2))), int(MAX_HRES/(channel**(1/2))), 3*channel)
+    self.mem3D = self.mem.reshape(int(MAX_VRES/(channel**(1/2))), int(MAX_HRES/(channel**(1/2))), 3*channel)
 
   def setPartialRows(self, SR, ER):
     self.SR = SR
     self.ER = ER
-    print("Set Start Row Read Address: {0} End Row Read Address: {1}".format(self.SP, self.EP))
+    print("Set Start Row Read Address: {0} End Row Read Address: {1}".format(self.SR, self.ER))
 
   def setPartialColumns(self, PSC, PEC):
     self.PSC = PSC
     self.PEC = PEC
     print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.PSC, self.PEC))
     
+  def readPartialMem(self):
+    Hidx = self.SR
+    self.fmem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
+    for idx in range(0, ((self.PEC-self.PSC)*(self.ER-self.SR))):
+      if idx % (self.PEC-self.PSC) == 0:
+        addr = self.PSC + (Hidx * self.hres)
+        Hidx = Hidx + 1 
+      else : 
+        addr = addr + 1
+      self.fmem[addr] = self.mem[addr] 
+      
   # def writeMem(self, pixeldata):
   #   for idx, pixel in enumerate(pixeldata):
   #     R = dec2hex(pixel[0], 3)
@@ -147,7 +158,9 @@ gram.writePartialMem(i_partImage1.pixelData)
 
 gram.reshapeMem(1)
 
-gram.setPartialRows(100, 224)
-gram.setPartialColumns(100,224)
+gram.setPartialRows(1, 500)
+gram.setPartialColumns(1, 500)
+gram.readPartialMem()
 
-o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.mem)
+#o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.mem)
+o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.fmem)
