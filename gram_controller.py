@@ -121,12 +121,13 @@ class GraphicRam:
     print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.PSC, self.PEC))
     
   def readPartialMem(self):
-    Hidx = self.SR
     self.fmem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
-    for idx in range(0, ((self.PEC-self.PSC)*(self.ER-self.SR))):
-      if idx % (self.PEC-self.PSC) == 0:
-        addr = self.PSC + (Hidx * self.hres)
-        Hidx = Hidx + 1 
+    
+    rowCnt = 0
+    for idx in range(0, (((self.PEC+1)-self.PSC)*((self.ER+1)-self.SR))):
+      if idx % ((self.PEC+1)-self.PSC) == 0:
+        addr = ((rowCnt+self.SR) * self.hres) + self.PSC
+        rowCnt = rowCnt + 1 
       else : 
         addr = addr + 1
       self.fmem[addr] = self.mem[addr] 
@@ -158,8 +159,8 @@ gram.writePartialMem(i_partImage1.pixelData)
 
 gram.reshapeMem(1)
 
-gram.setPartialRows(1, 500)
-gram.setPartialColumns(1, 500)
+gram.setPartialRows(0, 511)
+gram.setPartialColumns(0, 511)
 gram.readPartialMem()
 
 #o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.mem)
