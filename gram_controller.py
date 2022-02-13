@@ -123,15 +123,24 @@ class GraphicRam:
   def readPartialMem(self):
     self.fmem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
     
-    rowCnt = 0
     for idx in range(0, (((self.PEC+1)-self.PSC)*((self.ER+1)-self.SR))):
-      if idx % ((self.PEC+1)-self.PSC) == 0:
-        addr = ((rowCnt+self.SR) * self.hres) + self.PSC
-        rowCnt = rowCnt + 1 
-      else : 
-        addr = addr + 1
+      quo, rem = divmod(idx, (self.PEC+1)-self.PSC)
+      addr = (self.hres * (quo + self.SR)) + (rem + self.PSC)
       self.fmem[addr] = self.mem[addr] 
       
+  def setMovePoint(self, X, Y):
+    self.X = X 
+    self.Y = Y
+    print("Set Move Point X : {0} Move Point Y: {1}".format(self.X, self.Y))
+
+  def moveImage(self):
+    self.fmem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
+    for idx in range(0, ((self.hres-self.X)*(self.vres-self.Y))):
+      quo, rem = divmod(idx, (self.hres-self.X))
+      addr = (self.hres * (quo + self.Y)) + (rem + self.X)
+      readidx = (self.hres * quo) + rem
+      self.fmem[addr] = self.mem[readidx] 
+
   # def writeMem(self, pixeldata):
   #   for idx, pixel in enumerate(pixeldata):
   #     R = dec2hex(pixel[0], 3)
@@ -152,16 +161,21 @@ i_partImage1 = ImageInput('./image/flag.ppm')
 gram = GraphicRam(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
 gram.writeMem(i_fullImage1.pixelData)
 #gram.setPageAddress(0, 124)
-gram.setPageAddress(100, 224)
 #gram.setColumnAddress(0, 124)
+gram.setPageAddress(100, 224)
 gram.setColumnAddress(100, 224)
 gram.writePartialMem(i_partImage1.pixelData)
 
 gram.reshapeMem(1)
 
-gram.setPartialRows(0, 511)
-gram.setPartialColumns(0, 511)
+#gram.setPartialRows(0, 511)
+#gram.setPartialColumns(0, 511)
+gram.setPartialRows(1, 5)
+gram.setPartialColumns(2, 5)
 gram.readPartialMem()
+
+gram.setMovePoint(256, 256)
+gram.moveImage()
 
 #o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.mem)
 o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.fmem)
