@@ -1,4 +1,4 @@
-# gram_controller
+# Frame_Memory_Controller
 
 ## Python Version
 
