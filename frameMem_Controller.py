@@ -71,7 +71,7 @@ class ImageOutput(Image):
     for pixel in self.pixelData:
       file.write('{0:>3} {1:>3} {2:>3}\n'.format(pixel[0], pixel[1], pixel[2]))
 
-class FramemMem:
+class FrameMem:
   def __init__(self, hres, vres):
     self.hres = hres
     self.vres = vres
@@ -158,7 +158,7 @@ i_fullImage1 = ImageInput('./image/lena.ppm')
 #i_fullImage1 = ImageInput('./image/colorbar.ppm')
 i_partImage1 = ImageInput('./image/flag.ppm')
 
-frameMem = FramemMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
+frameMem = FrameMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
 frameMem.writeMem(i_fullImage1.pixelData)
 #frameMem.setPageAddress(0, 124)
 #frameMem.setColumnAddress(0, 124)
