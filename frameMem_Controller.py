@@ -71,7 +71,7 @@ class ImageOutput(Image):
     for pixel in self.pixelData:
       file.write('{0:>3} {1:>3} {2:>3}\n'.format(pixel[0], pixel[1], pixel[2]))
 
-class GraphicRam:
+class FramemMem:
   def __init__(self, hres, vres):
     self.hres = hres
     self.vres = vres
@@ -158,24 +158,24 @@ i_fullImage1 = ImageInput('./image/lena.ppm')
 #i_fullImage1 = ImageInput('./image/colorbar.ppm')
 i_partImage1 = ImageInput('./image/flag.ppm')
 
-gram = GraphicRam(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
-gram.writeMem(i_fullImage1.pixelData)
-#gram.setPageAddress(0, 124)
-#gram.setColumnAddress(0, 124)
-gram.setPageAddress(100, 224)
-gram.setColumnAddress(100, 224)
-gram.writePartialMem(i_partImage1.pixelData)
+frameMem = FramemMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
+frameMem.writeMem(i_fullImage1.pixelData)
+#frameMem.setPageAddress(0, 124)
+#frameMem.setColumnAddress(0, 124)
+frameMem.setPageAddress(100, 224)
+frameMem.setColumnAddress(100, 224)
+frameMem.writePartialMem(i_partImage1.pixelData)
 
-gram.reshapeMem(1)
+frameMem.reshapeMem(1)
 
-#gram.setPartialRows(0, 511)
-#gram.setPartialColumns(0, 511)
-gram.setPartialRows(1, 5)
-gram.setPartialColumns(2, 5)
-gram.readPartialMem()
+#frameMem.setPartialRows(0, 511)
+#frameMem.setPartialColumns(0, 511)
+frameMem.setPartialRows(1, 5)
+frameMem.setPartialColumns(2, 5)
+frameMem.readPartialMem()
 
-gram.setMovePoint(256, 256)
-gram.moveImage()
+frameMem.setMovePoint(256, 256)
+frameMem.moveImage()
 
-#o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.mem)
-o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, gram.fmem)
+#o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.mem)
+o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.fmem)

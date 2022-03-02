@@ -7,7 +7,7 @@
 
 ## Source code list  
 
-> gram_controller.py  
+> frameMem_controller.py  
 ---
 
 ## Class
