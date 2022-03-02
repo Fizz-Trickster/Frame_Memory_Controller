@@ -20,7 +20,7 @@
 
 > .ppm File Write  
 
-### GraphicRam
+### Frame Memory
 
 > Memory Write  
 > Memory Partial Write  
