@@ -7,7 +7,7 @@
 
 ## Source code list  
 
-> frameMem_controller.py  
+> frame_mem_ctrl.py  
 ---
 
 ## Class
