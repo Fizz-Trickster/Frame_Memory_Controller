@@ -110,6 +110,18 @@ class FrameMem:
   def reshapeMem(self, channel=4):
     self.mem3D = self.mem.reshape(int(MAX_VRES/(channel**(1/2))), int(MAX_HRES/(channel**(1/2))), 3*channel)
 
+  def makeMem2x2DataPerIndex(self):
+    self.mem2x2DataPerIndex = np.zeros(shape=((MAX_VRES//2)*(MAX_HRES//2), 12), dtype=int)
+    for rowCnt in range(0, MAX_VRES//2):
+      for colCnt in range(0, MAX_HRES//2):
+        for idx in range(0, 12):
+          quo, rem = divmod(idx, 3)
+          addr = rowCnt*(MAX_HRES//2)+colCnt
+          if idx < 6:
+            self.mem2x2DataPerIndex[addr][idx] = self.mem[(rowCnt*2*MAX_HRES)+(colCnt*2+quo)][rem]
+          else :
+            self.mem2x2DataPerIndex[addr][idx] = self.mem[((rowCnt*2+1)*MAX_HRES)+(colCnt*2+(quo-2))][rem]
+
   def setPartialRows(self, SR, ER):
     self.SR = SR
     self.ER = ER
@@ -160,6 +172,7 @@ i_partImage1 = ImageInput('./image/flag.ppm')
 
 frameMem = FrameMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
 frameMem.writeMem(i_fullImage1.pixelData)
+frameMem.makeMem2x2DataPerIndex()
 #frameMem.setPageAddress(0, 124)
 #frameMem.setColumnAddress(0, 124)
 frameMem.setPageAddress(100, 224)
