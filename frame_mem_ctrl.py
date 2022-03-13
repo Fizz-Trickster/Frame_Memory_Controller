@@ -79,10 +79,10 @@ class FrameMem:
     self.EP   = self.hres
     self.SC   = 0
     self.EC   = self.vres
-    self.PSC  = 0
-    self.PEC  = self.hres
     self.SR   = 0
     self.ER   = self.vres
+    self.PSC  = 0
+    self.PEC  = self.hres
     self.mem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
 
   def writeMem(self, pixelData):
@@ -195,6 +195,26 @@ class FrameMemCompression(FrameMem):
               self.mem[addr][9:12] = pixelData[idx]
           idx += 1
 
+  def readPartialMem(self):
+    self.image = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
+
+    for rowCnt in range(0, MAX_VRES):
+      for colCnt in range(0, MAX_HRES):
+        if (rowCnt >= self.SR and rowCnt < self.ER) and (colCnt >= self.PSC and colCnt < self.PEC):
+          isEvenRow = (rowCnt % 2 == 0)
+          isEvenCol = (colCnt % 2 == 0)
+          addr = (rowCnt//2 * MAX_HRES//2) + (colCnt//2)
+          if isEvenRow:
+            if isEvenCol:
+              self.image[rowCnt*MAX_HRES + colCnt] = self.mem[addr][0: 3]
+            else:
+              self.image[rowCnt*MAX_HRES + colCnt] = self.mem[addr][3: 6]
+          else:
+            if isEvenCol:
+              self.image[rowCnt*MAX_HRES + colCnt] = self.mem[addr][6: 9]
+            else:
+              self.image[rowCnt*MAX_HRES + colCnt] = self.mem[addr][9:12]
+
     #for idx, pixel in enumerate(pixelData):
     #  quo, rem = divmod(idx, (self.EC-self.SC)) 
     #  addr = (self.hres * (quo + self.SP)) + (rem + self.SC)
@@ -206,27 +226,29 @@ i_fullImage1 = ImageInput('./image/lena.ppm')
 #i_fullImage1 = ImageInput('./image/colorbar.ppm')
 i_partImage1 = ImageInput('./image/flag.ppm')
 
-SP = 100 
-EP = 223
-SC = 100
-EC = 223
+SP, EP    = 100 , 223
+SC, EC    = 100 , 223
+
+SR, ER    = 0   , 511
+PSC, PEC  = 0   , 511
+
 #=====================================================
 # Frame Memory  
 #=====================================================
-frameMem = FrameMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
-frameMem.writeMem(i_fullImage1.pixelData)
-frameMem.setPageAddress(SP, EP)
-frameMem.setColumnAddress(SC, EC)
-frameMem.writePartialMem(i_partImage1.pixelData)
-
-frameMem.reshapeMem(1)
-
-frameMem.setPartialRows(1, 5)
-frameMem.setPartialColumns(2, 5)
-frameMem.readPartialMem()
-
-frameMem.setMovePoint(256, 256)
-frameMem.moveImage()
+#frameMem = FrameMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
+#frameMem.writeMem(i_fullImage1.pixelData)
+#frameMem.setPageAddress(SP, EP)
+#frameMem.setColumnAddress(SC, EC)
+#frameMem.writePartialMem(i_partImage1.pixelData)
+#
+#frameMem.reshapeMem(1)
+#
+#frameMem.setPartialRows(SR, ER)
+#frameMem.setPartialColumns(PSC, PEC)
+#frameMem.readPartialMem()
+#
+#frameMem.setMovePoint(256, 256)
+#frameMem.moveImage()
 
 #=====================================================
 # Frame Memory 2x2 Compression 
@@ -238,7 +260,11 @@ frameMemCompress.setPageAddress(SP, EP)
 frameMemCompress.setColumnAddress(SC, EC)
 frameMemCompress.writePartialMem(i_partImage1.pixelData)
 
-frameMemCompress.readMem()
+frameMemCompress.setPartialRows(SR, ER)
+frameMemCompress.setPartialColumns(PSC, PEC)
+
+frameMemCompress.readPartialMem()
+#frameMemCompress.readMem()
 
 #=====================================================
 # Image Write  
