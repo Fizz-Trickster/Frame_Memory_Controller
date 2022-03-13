@@ -92,12 +92,12 @@ class FrameMem:
 
   def setPageAddress(self, SP, EP):
     self.SP = SP
-    self.EP = EP
+    self.EP = EP + 1
     print("Set Start Page Write Address : {0} End Page Write Address : {1}".format(self.SP, self.EP))
 
   def setColumnAddress(self, SC, EC):
     self.SC = SC
-    self.EC = EC
+    self.EC = EC + 1
     print("Set Start Column Write Address : {0} End Column Write Address : {1}".format(self.SC, self.EC))
   
   def writePartialMem(self, pixelData):
@@ -111,21 +111,21 @@ class FrameMem:
 
   def setPartialRows(self, SR, ER):
     self.SR = SR
-    self.ER = ER
+    self.ER = ER + 1
     print("Set Start Row Read Address: {0} End Row Read Address: {1}".format(self.SR, self.ER))
 
   def setPartialColumns(self, PSC, PEC):
     self.PSC = PSC
-    self.PEC = PEC
+    self.PEC = PEC + 1
     print("Set Start Column Read Address : {0} End Column Read Address : {1}".format(self.PSC, self.PEC))
     
   def readPartialMem(self):
-    self.fmem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
+    self.image  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
     
     for idx in range(0, (((self.PEC+1)-self.PSC)*((self.ER+1)-self.SR))):
       quo, rem = divmod(idx, (self.PEC+1)-self.PSC)
       addr = (self.hres * (quo + self.SR)) + (rem + self.PSC)
-      self.fmem[addr] = self.mem[addr] 
+      self.image[addr] = self.mem[addr] 
       
   def setMovePoint(self, X, Y):
     self.X = X 
@@ -133,14 +133,14 @@ class FrameMem:
     print("Set Move Point X : {0} Move Point Y: {1}".format(self.X, self.Y))
 
   def moveImage(self):
-    self.fmem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
+    self.image  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
     for idx in range(0, ((self.hres-self.X)*(self.vres-self.Y))):
       quo, rem = divmod(idx, (self.hres-self.X))
       addr = (self.hres * (quo + self.Y)) + (rem + self.X)
       readidx = (self.hres * quo) + rem
-      self.fmem[addr] = self.mem[readidx] 
+      self.image[addr] = self.mem[readidx] 
 
-class FrameMemCompression:
+class FrameMemCompression(FrameMem):
   def __init__(self, hres, vres):
     FrameMem.__init__(self, hres, vres)
     self.mem = self.mem.reshape((MAX_VRES//2)*(MAX_HRES//2), 12)
@@ -175,6 +175,30 @@ class FrameMemCompression:
           else:
             self.image[rowCnt * MAX_HRES + colCnt] = self.mem[addr][9:12]
 
+  def writePartialMem(self, pixelData):
+    idx = 0
+    for rowCnt in range(0, MAX_VRES):
+      for colCnt in range(0, MAX_HRES):
+        if (rowCnt >= self.SP and rowCnt < self.EP) and (colCnt >= self.SC and colCnt < self.EC):
+          isEvenRow = (rowCnt % 2 == 0)
+          isEvenCol = (colCnt % 2 == 0)
+          addr = (rowCnt//2 * MAX_HRES//2) + (colCnt//2)
+          if isEvenRow:
+            if isEvenCol:
+              self.mem[addr][0: 3] = pixelData[idx]
+            else:
+              self.mem[addr][3: 6] = pixelData[idx]
+          else:
+            if isEvenCol:
+              self.mem[addr][6: 9] = pixelData[idx]
+            else:
+              self.mem[addr][9:12] = pixelData[idx]
+          idx += 1
+
+    #for idx, pixel in enumerate(pixelData):
+    #  quo, rem = divmod(idx, (self.EC-self.SC)) 
+    #  addr = (self.hres * (quo + self.SP)) + (rem + self.SC)
+    #  self.mem[addr] = pixel 
 #=====================================================
 # Main
 #=====================================================
@@ -182,13 +206,17 @@ i_fullImage1 = ImageInput('./image/lena.ppm')
 #i_fullImage1 = ImageInput('./image/colorbar.ppm')
 i_partImage1 = ImageInput('./image/flag.ppm')
 
+SP = 100 
+EP = 223
+SC = 100
+EC = 223
 #=====================================================
 # Frame Memory  
 #=====================================================
 frameMem = FrameMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
 frameMem.writeMem(i_fullImage1.pixelData)
-frameMem.setPageAddress(100, 224)
-frameMem.setColumnAddress(100, 224)
+frameMem.setPageAddress(SP, EP)
+frameMem.setColumnAddress(SC, EC)
 frameMem.writePartialMem(i_partImage1.pixelData)
 
 frameMem.reshapeMem(1)
@@ -205,6 +233,11 @@ frameMem.moveImage()
 #=====================================================
 frameMemCompress = FrameMemCompression(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
 frameMemCompress.writeMem(i_fullImage1.pixelData)
+
+frameMemCompress.setPageAddress(SP, EP)
+frameMemCompress.setColumnAddress(SC, EC)
+frameMemCompress.writePartialMem(i_partImage1.pixelData)
+
 frameMemCompress.readMem()
 
 #=====================================================
@@ -213,4 +246,4 @@ frameMemCompress.readMem()
 o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMemCompress.image)
 
 #o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.mem)
-#o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.fmem)
+#o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.image)
