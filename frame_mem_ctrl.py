@@ -57,10 +57,10 @@ class ImageInput(Image):
 
 class ImageOutput(Image):
   def __init__(self, filePath, header, pixelData):
-      Image.__init__(self, filePath)
-      self.header = header
-      self.pixelData = pixelData
-      self.writeFile()
+    Image.__init__(self, filePath)
+    self.header = header
+    self.pixelData = pixelData
+    self.writeFile()
 
   def writeFile(self):
     file = open(self.filePath, 'w')
@@ -84,7 +84,6 @@ class FrameMem:
     self.SR   = 0
     self.ER   = self.vres
     self.mem  = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
-    # self.mem = np.empty(shape=(MAX_VRES*MAX_HRES), dtype='U36')
 
   def writeMem(self, pixelData):
     for idx, pixel in enumerate(pixelData):
@@ -109,18 +108,6 @@ class FrameMem:
 
   def reshapeMem(self, channel=4):
     self.mem3D = self.mem.reshape(int(MAX_VRES/(channel**(1/2))), int(MAX_HRES/(channel**(1/2))), 3*channel)
-
-  def makeMem2x2DataPerIndex(self):
-    self.mem2x2DataPerIndex = np.zeros(shape=((MAX_VRES//2)*(MAX_HRES//2), 12), dtype=int)
-    for rowCnt in range(0, MAX_VRES//2):
-      for colCnt in range(0, MAX_HRES//2):
-        for idx in range(0, 12):
-          quo, rem = divmod(idx, 3)
-          addr = rowCnt*(MAX_HRES//2)+colCnt
-          if idx < 6:
-            self.mem2x2DataPerIndex[addr][idx] = self.mem[(rowCnt*2*MAX_HRES)+(colCnt*2+quo)][rem]
-          else :
-            self.mem2x2DataPerIndex[addr][idx] = self.mem[((rowCnt*2+1)*MAX_HRES)+(colCnt*2+(quo-2))][rem]
 
   def setPartialRows(self, SR, ER):
     self.SR = SR
@@ -153,15 +140,40 @@ class FrameMem:
       readidx = (self.hres * quo) + rem
       self.fmem[addr] = self.mem[readidx] 
 
-  # def writeMem(self, pixeldata):
-  #   for idx, pixel in enumerate(pixeldata):
-  #     R = dec2hex(pixel[0], 3)
-  #     G = dec2hex(pixel[1], 3)
-  #     B = dec2hex(pixel[2], 3)
-  #     strdata = R+G+B
-  #     self.mem[idx] = strdata 
-  #     # Vidx, Hidx = divmod(idx, self.hres) 
-  #     # self.mem[Vidx][Hidx] = strdata 
+class FrameMemCompression:
+  def __init__(self, hres, vres):
+    FrameMem.__init__(self, hres, vres)
+    self.mem = self.mem.reshape((MAX_VRES//2)*(MAX_HRES//2), 12)
+
+  def writeMem(self, pixelData):
+    for rowCnt in range(0, MAX_VRES//2):
+      for colCnt in range(0, MAX_HRES//2):
+        for idx in range(0, 12):
+          quo, rem = divmod(idx, 3)
+          addr = rowCnt*(MAX_HRES//2)+colCnt
+          if idx < 6:
+            self.mem[addr][idx] = pixelData[(rowCnt*2*MAX_HRES)+(colCnt*2+quo)][rem]
+          else :
+            self.mem[addr][idx] = pixelData[((rowCnt*2+1)*MAX_HRES)+(colCnt*2+(quo-2))][rem]
+
+  def readMem(self):
+    self.image = np.zeros(shape=(MAX_VRES*MAX_HRES, 3), dtype=int)
+    
+    for rowCnt in range(0, MAX_VRES):
+      for colCnt in range(0, MAX_HRES):
+        isEvenRow = (rowCnt % 2 == 0)
+        isEvenCol = (colCnt % 2 == 0)
+        addr = (rowCnt//2 * MAX_HRES//2) + (colCnt//2)
+        if isEvenRow:
+          if isEvenCol:
+            self.image[rowCnt * MAX_HRES + colCnt] = self.mem[addr][0:3]
+          else:
+            self.image[rowCnt * MAX_HRES + colCnt] = self.mem[addr][3:6]
+        else:
+          if isEvenCol:
+            self.image[rowCnt * MAX_HRES + colCnt] = self.mem[addr][6:9]
+          else:
+            self.image[rowCnt * MAX_HRES + colCnt] = self.mem[addr][9:12]
 
 #=====================================================
 # Main
@@ -170,19 +182,17 @@ i_fullImage1 = ImageInput('./image/lena.ppm')
 #i_fullImage1 = ImageInput('./image/colorbar.ppm')
 i_partImage1 = ImageInput('./image/flag.ppm')
 
+#=====================================================
+# Frame Memory  
+#=====================================================
 frameMem = FrameMem(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
 frameMem.writeMem(i_fullImage1.pixelData)
-frameMem.makeMem2x2DataPerIndex()
-#frameMem.setPageAddress(0, 124)
-#frameMem.setColumnAddress(0, 124)
 frameMem.setPageAddress(100, 224)
 frameMem.setColumnAddress(100, 224)
 frameMem.writePartialMem(i_partImage1.pixelData)
 
 frameMem.reshapeMem(1)
 
-#frameMem.setPartialRows(0, 511)
-#frameMem.setPartialColumns(0, 511)
 frameMem.setPartialRows(1, 5)
 frameMem.setPartialColumns(2, 5)
 frameMem.readPartialMem()
@@ -190,5 +200,17 @@ frameMem.readPartialMem()
 frameMem.setMovePoint(256, 256)
 frameMem.moveImage()
 
+#=====================================================
+# Frame Memory 2x2 Compression 
+#=====================================================
+frameMemCompress = FrameMemCompression(i_fullImage1.header['Hres'], i_fullImage1.header['Vres'])
+frameMemCompress.writeMem(i_fullImage1.pixelData)
+frameMemCompress.readMem()
+
+#=====================================================
+# Image Write  
+#=====================================================
+o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMemCompress.image)
+
 #o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.mem)
-o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.fmem)
+#o_image1 = ImageOutput('./image/output1.ppm', i_fullImage1.header, frameMem.fmem)
